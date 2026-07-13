@@ -4,3 +4,4 @@ beautifulsoup4
 qrcode
 pillow
 python-supabase
+streamlit-autorefresh
