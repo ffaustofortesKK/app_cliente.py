@@ -1,7 +1,5 @@
 streamlit
 requests
-beautifulsoup4
 qrcode
-pillow
-python-supabase
-streamlit-autorefresh
+Pillow
+supabase
