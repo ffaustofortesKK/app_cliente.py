@@ -1,13 +1,16 @@
 import streamlit as st
 import requests
 import time
+from supabase import create_client
 
-# --- CONFIGURAÇÕES ---
-URL_FIREBASE_CATALOGO = "https://grupoffkaraoke-default-rtdb.firebaseio.com/catalogo.json"
+# Configuração Supabase (O cliente precisa de consultar a lista de músicas)
+url = st.secrets["URL_SUPABASE"]
+key = st.secrets["KEY_SUPABASE"]
+supabase = create_client(url, key)
 
-st.set_page_config(page_title="FF KARAOKE CLOUD", layout="wide")
+st.set_page_config(page_title="FF KARAOKE - CLIENTE", layout="centered")
 
-# Captura o prestador da URL: app/?prestador=nome-do-prestador
+# Captura o prestador da URL
 query_params = st.query_params
 prestador_slug = query_params.get("prestador", "geral")
 URL_FIREBASE_PEDIDOS = f"https://grupoffkaraoke-default-rtdb.firebaseio.com/pedidos_{prestador_slug}.json"
@@ -15,9 +18,9 @@ URL_FIREBASE_PEDIDOS = f"https://grupoffkaraoke-default-rtdb.firebaseio.com/pedi
 if 'registado' not in st.session_state: st.session_state.registado = False
 
 if not st.session_state.registado:
-    st.subheader("📝 Registo Inicial")
-    nome = st.text_input("Nome:")
-    if st.button("Concluir Registo"):
+    st.subheader("🎤 Registo do Cantor")
+    nome = st.text_input("Seu nome:")
+    if st.button("Entrar no Karaokê"):
         if nome:
             st.session_state.nome = nome
             st.session_state.registado = True
@@ -25,25 +28,27 @@ if not st.session_state.registado:
 else:
     st.title(f"Bem-vindo, {st.session_state.nome}!")
     
-    busca = st.text_input("🔍 Pesquisar Música:")
-    escolha = None
-    if busca:
-        try:
-            dados = requests.get(URL_FIREBASE_CATALOGO, timeout=5).json()
-            resultados = [m for m in dados if busca.lower() in m.lower()]
-            escolha = st.selectbox("Selecione:", resultados)
-        except: pass
+    # BUSCA AUTOMÁTICA NO SUPABASE (Lista de Músicas)
+    # Isso garante que o cliente só peça músicas que você realmente tem!
+    try:
+        res = supabase.table("musicas").select("nome").execute()
+        lista_musicas = [m["nome"] for m in res.data] if res.data else []
+    except:
+        lista_musicas = []
 
-    if escolha and st.button("Confirmar Pedido"):
-        requests.post(URL_FIREBASE_PEDIDOS, json={"cantor": st.session_state.nome, "musica": escolha})
-        st.success("Pedido enviado!")
-        time.sleep(1); st.rerun()
+    st.subheader("🔍 Escolha a sua música")
+    busca = st.selectbox("Pesquise e selecione sua música:", [""] + lista_musicas)
 
-    # Pedido manual
-    pedido_manual = st.text_input("Não achou? Digite a música:")
-    if st.button("Confirmar Pedido Manual") and pedido_manual:
-        requests.post(URL_FIREBASE_PEDIDOS, json={"cantor": st.session_state.nome, "musica": pedido_manual})
-        st.success("Pedido enviado!")
+    if busca and st.button("🎤 Confirmar Pedido"):
+        requests.post(URL_FIREBASE_PEDIDOS, json={
+            "cantor": st.session_state.nome, 
+            "musica": busca
+        })
+        st.success(f"Pedido de '{busca}' enviado com sucesso!")
+        time.sleep(2)
         st.rerun()
 
-    if st.button("Sair"): st.session_state.registado = False; st.rerun()
+    st.divider()
+    if st.button("Sair/Trocar Cantor"): 
+        st.session_state.registado = False
+        st.rerun()
