@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import time  # <--- Importação necessária que estava faltando
 
 st.set_page_config(page_title="FF KARAOKE - CLIENTE", layout="centered")
 
@@ -7,19 +8,22 @@ st.set_page_config(page_title="FF KARAOKE - CLIENTE", layout="centered")
 query_params = st.query_params
 prestador_slug = query_params.get("prestador", "geral")
 
+# URLs Corretas
 BASE_URL = "https://grupoffkaraoke-default-rtdb.firebaseio.com"
 URL_FIREBASE_PEDIDOS = f"{BASE_URL}/pedidos_{prestador_slug}.json"
 URL_STATUS = f"{BASE_URL}/status_{prestador_slug}.json"
 URL_CATALOGO = f"{BASE_URL}/catalogo.json"
 
-if 'registado' not in st.session_state: st.session_state.registado = False
+if 'registado' not in st.session_state: 
+    st.session_state.registado = False
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=600)
 def obter_catalogo():
     try:
         res = requests.get(URL_CATALOGO).json()
         return list(res.values()) if isinstance(res, dict) else (res or [])
-    except: return ["Erro ao carregar catálogo"]
+    except:
+        return ["Erro ao carregar catálogo"]
 
 # --- LOGIN ---
 if not st.session_state.registado:
@@ -31,12 +35,14 @@ if not st.session_state.registado:
             st.session_state.registado = True
             st.rerun()
 else:
-    # --- INTERFACE PRINCIPAL ---
     st.title(f"Bem-vindo, {st.session_state.nome}!")
     
-    # Verifica o estado atual na TV
-    status = requests.get(URL_STATUS).json() or {}
-    
+    # Busca o status atual da TV/Prestador
+    try:
+        status = requests.get(URL_STATUS).json() or {}
+    except:
+        status = {}
+
     # 1. Lógica do botão de Play (se for a vez do cliente)
     if status.get("cantor") == st.session_state.nome and status.get("comando") == "aguardando_play":
         st.success("🎉 É a sua vez de brilhar!")
@@ -46,18 +52,18 @@ else:
     
     # 2. Se a música está a tocar
     elif status.get("cantor") == st.session_state.nome and status.get("comando") == "play":
-        st.info("🎤 A sua música está a tocar na TV!")
+        st.info("🎤 A sua música está a tocar na TV! Divirta-se!")
     
-    # 3. Se não é a vez dele, mostra a lista de músicas
+    # 3. Lista de pedidos (se não for a vez dele)
     else:
         catalogo = obter_catalogo()
-        termo_busca = st.text_input("🔍 Pesquise a sua música:")
+        termo_busca = st.text_input("🔍 Pesquise sua música aqui:")
         
         musica_escolhida = None
         if termo_busca:
             resultados = [m for m in catalogo if termo_busca.lower() in str(m).lower()]
             if resultados:
-                musica_escolhida = st.selectbox("Selecione:", resultados)
+                musica_escolhida = st.selectbox("Selecione sua música:", resultados)
             else:
                 st.warning("Nenhuma música encontrada.")
         
@@ -72,6 +78,6 @@ else:
         st.session_state.registado = False
         st.rerun()
 
-    # Atualiza a página a cada 5 segundos para verificar se é a vez do cliente
+    # Atualiza a página a cada 5 segundos para verificar o status
     time.sleep(5)
     st.rerun()
