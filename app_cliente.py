@@ -20,7 +20,6 @@ def obter_catalogo():
         return list(res.values()) if isinstance(res, dict) else (res or [])
     except: return []
 
-# --- LOGIN ---
 if not st.session_state.registado:
     st.title("🎤 FF Karaoke")
     nome = st.text_input("Como quer ser chamado?")
@@ -29,71 +28,57 @@ if not st.session_state.registado:
 else:
     try:
         status = requests.get(f"{URL_STATUS}?nocache={time.time()}").json() or {}
-        pedidos = requests.get(f"{URL_PEDIDOS}?nocache={time.time()}").json() or {}
-    except: status = {}; pedidos = {}
+    except: status = {}
 
     nome_firebase = str(status.get("cantor", "")).strip().lower()
     meu_nome = str(st.session_state.nome).strip().lower()
 
-    # Verifica se o cantor já tem pedidos na fila
-    ja_na_fila = any(p.get("cantor", "").strip().lower() == meu_nome for p in (pedidos.values() if pedidos else []))
-
-    # 1. É a vez do cliente
     if nome_firebase == meu_nome and status.get("comando") == "aguardando_play":
         st.success("🎉 É a sua vez de brilhar!")
         if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
             requests.patch(URL_STATUS, json={"comando": "play"})
             st.rerun()
-
-    # 2. Música a tocar
     elif nome_firebase == meu_nome and status.get("comando") == "play":
         st.info("🎤 A sua música está a tocar na TV!")
-
-    # 3. Pesquisa e Playlist
     else:
-        if ja_na_fila:
-            st.warning("⚠️ Você já tem pedidos na fila. Aguarde a sua vez!")
-        else:
-            st.info("Prepare a sua playlist e envie para o DJ!")
+        # AQUI COMEÇA A NOVA LÓGICA DE PEDIDOS
+        st.info("Aguarde a sua vez e prepare a sua playlist!")
         
         # Gestão da Playlist
-        st.subheader("Playlist (Máx 5)")
-        if len(st.session_state.minha_playlist) > 0:
-            for i, m in enumerate(st.session_state.minha_playlist):
-                col1, col2 = st.columns([4, 1])
-                col1.write(f"{i+1}. {m}")
-                if not ja_na_fila and col2.button("❌", key=f"rem_{i}"):
-                    st.session_state.minha_playlist.pop(i)
-                    st.rerun()
-        else:
-            st.write("Sua playlist está vazia.")
+        st.subheader("Minha Playlist (Máx 5)")
+        for i, m in enumerate(st.session_state.minha_playlist):
+            col1, col2 = st.columns([4, 1])
+            col1.write(f"{i+1}. {m}")
+            if col2.button("❌", key=f"rem_{i}"):
+                st.session_state.minha_playlist.pop(i); st.rerun()
         
-        # Adicionar nova música (apenas se não estiver na fila)
-        if not ja_na_fila and len(st.session_state.minha_playlist) < 5:
-            st.divider()
-            termo = st.text_input("🔍 Pesquisar música:")
-            catalogo = obter_catalogo()
-            resultados = [m for m in catalogo if termo.lower() in str(m).lower()] if termo else []
-            
+        if len(st.session_state.minha_playlist) < 5:
+            termo = st.text_input("🔍 Pesquisar música no catálogo:")
+            resultados = [m for m in obter_catalogo() if termo.lower() in str(m).lower()] if termo else []
             if termo and resultados:
-                musica_sel = st.selectbox("Escolha na lista:", resultados)
+                musica_sel = st.selectbox("Escolha:", resultados)
                 if st.button("➕ Adicionar à Playlist"):
-                    st.session_state.minha_playlist.append(musica_sel)
-                    st.rerun()
-        elif not ja_na_fila:
-            st.warning("Playlist cheia! (Máximo 5 músicas)")
-
-        # Enviar pedido (apenas se não estiver na fila)
-        if not ja_na_fila and st.session_state.minha_playlist:
-            if st.button("🚀 Enviar Pedidos para o DJ", use_container_width=True):
+                    st.session_state.minha_playlist.append(musica_sel); st.rerun()
+        
+        st.divider()
+        st.subheader("📝 Pedido Personalizado")
+        pedido_extra = st.text_area("Não encontrou? Escreva o nome da música:")
+        
+        # Lógica de Envio Único (Bloqueia se não for a vez ou se não tiver nada)
+        if st.button("🚀 Enviar Pedidos para o DJ"):
+            if not st.session_state.minha_playlist and not pedido_extra:
+                st.warning("Adicione músicas à playlist ou escreva um pedido.")
+            else:
+                # Enviar Playlist
                 for m in st.session_state.minha_playlist:
                     requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": m})
-                st.session_state.minha_playlist = [] 
-                st.success("Pedidos enviados! Aguarde a sua vez.")
-                st.balloons()
-                time.sleep(2); st.rerun()
+                # Enviar Pedido Extra
+                if pedido_extra:
+                    requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": f"PEDIDO: {pedido_extra}"})
+                
+                st.session_state.minha_playlist = []
+                st.warning("⚠️ O seu pedido foi enviado, mas nem todas as músicas estão disponíveis em karaoke. Aguarde pela sua vez.")
+                time.sleep(4); st.rerun()
 
-    st.divider()
     if st.button("Sair"): st.session_state.registado = False; st.rerun()
-    
     time.sleep(3); st.rerun()
