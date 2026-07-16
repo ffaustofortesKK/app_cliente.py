@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-import time  # <--- Importação necessária que estava faltando
+import time
 
 st.set_page_config(page_title="FF KARAOKE - CLIENTE", layout="centered")
 
@@ -17,6 +17,7 @@ URL_CATALOGO = f"{BASE_URL}/catalogo.json"
 if 'registado' not in st.session_state: 
     st.session_state.registado = False
 
+# Função para buscar catálogo com cache (otimiza a velocidade)
 @st.cache_data(ttl=600)
 def obter_catalogo():
     try:
@@ -37,18 +38,25 @@ if not st.session_state.registado:
 else:
     st.title(f"Bem-vindo, {st.session_state.nome}!")
     
-    # Busca o status atual da TV/Prestador
+    # --- BUSCA DE STATUS COM ANTI-CACHE ---
+    # Adicionamos o tempo na URL para forçar o navegador a buscar o dado novo
     try:
-        status = requests.get(URL_STATUS).json() or {}
+        url_status_cache = f"{URL_STATUS}?nocache={time.time()}"
+        status = requests.get(url_status_cache).json() or {}
     except:
         status = {}
+
+    # Debug visual para garantir que está a ler o Firebase (pode remover a linha abaixo após testar)
+    # st.write(f"Estado atual: {status.get('comando')}")
 
     # 1. Lógica do botão de Play (se for a vez do cliente)
     if status.get("cantor") == st.session_state.nome and status.get("comando") == "aguardando_play":
         st.success("🎉 É a sua vez de brilhar!")
         if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
+            # Ao clicar, atualiza o status para play para a TV começar
             requests.patch(URL_STATUS, json={"comando": "play"})
             st.info("A música começou na TV. Solte a voz!")
+            st.rerun()
     
     # 2. Se a música está a tocar
     elif status.get("cantor") == st.session_state.nome and status.get("comando") == "play":
