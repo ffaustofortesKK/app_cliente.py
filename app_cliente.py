@@ -8,7 +8,7 @@ st.set_page_config(page_title="FF KARAOKE - CLIENTE", layout="centered")
 query_params = st.query_params
 prestador_slug = query_params.get("prestador", "geral")
 
-# URLs Corretas
+# URLs
 BASE_URL = "https://grupoffkaraoke-default-rtdb.firebaseio.com"
 URL_FIREBASE_PEDIDOS = f"{BASE_URL}/pedidos_{prestador_slug}.json"
 URL_STATUS = f"{BASE_URL}/status_{prestador_slug}.json"
@@ -17,7 +17,6 @@ URL_CATALOGO = f"{BASE_URL}/catalogo.json"
 if 'registado' not in st.session_state: 
     st.session_state.registado = False
 
-# Função para buscar catálogo com cache (otimiza a velocidade)
 @st.cache_data(ttl=600)
 def obter_catalogo():
     try:
@@ -38,32 +37,39 @@ if not st.session_state.registado:
 else:
     st.title(f"Bem-vindo, {st.session_state.nome}!")
     
-    # --- BUSCA DE STATUS COM ANTI-CACHE ---
-    # Adicionamos o tempo na URL para forçar o navegador a buscar o dado novo
+    # Busca de status com anti-cache
     try:
         url_status_cache = f"{URL_STATUS}?nocache={time.time()}"
         status = requests.get(url_status_cache).json() or {}
     except:
         status = {}
 
-    # Debug visual para garantir que está a ler o Firebase (pode remover a linha abaixo após testar)
-    # st.write(f"Estado atual: {status.get('comando')}")
+    # --- LÓGICA DE COMPARAÇÃO ROBUSTA ---
+    nome_firebase = str(status.get("cantor", "")).strip().lower()
+    meu_nome = str(st.session_state.nome).strip().lower()
+    comando_atual = status.get("comando", "")
 
-    # 1. Lógica do botão de Play (se for a vez do cliente)
-    if status.get("cantor") == st.session_state.nome and status.get("comando") == "aguardando_play":
+    # Debug Visual (SE NÃO APARECER O BOTÃO, OLHE PARA ESTES DADOS)
+    with st.expander("Ver Estado do Sistema (Debug)"):
+        st.write(f"Firebase: '{nome_firebase}'")
+        st.write(f"Sua Sessão: '{meu_nome}'")
+        st.write(f"Comando: '{comando_atual}'")
+
+    # 1. Lógica do botão de Play
+    if nome_firebase == meu_nome and comando_atual == "aguardando_play":
         st.success("🎉 É a sua vez de brilhar!")
         if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
-            # Ao clicar, atualiza o status para play para a TV começar
             requests.patch(URL_STATUS, json={"comando": "play"})
             st.info("A música começou na TV. Solte a voz!")
             st.rerun()
     
     # 2. Se a música está a tocar
-    elif status.get("cantor") == st.session_state.nome and status.get("comando") == "play":
+    elif nome_firebase == meu_nome and comando_atual == "play":
         st.info("🎤 A sua música está a tocar na TV! Divirta-se!")
     
-    # 3. Lista de pedidos (se não for a vez dele)
+    # 3. Lista de pedidos
     else:
+        st.write("Aguardando a sua vez...")
         catalogo = obter_catalogo()
         termo_busca = st.text_input("🔍 Pesquise sua música aqui:")
         
@@ -72,12 +78,10 @@ else:
             resultados = [m for m in catalogo if termo_busca.lower() in str(m).lower()]
             if resultados:
                 musica_escolhida = st.selectbox("Selecione sua música:", resultados)
-            else:
-                st.warning("Nenhuma música encontrada.")
         
         if musica_escolhida and st.button("🎤 Confirmar Pedido"):
             payload = {"cantor": st.session_state.nome, "musica": musica_escolhida}
-            requests.post(URL_FIREBASE_PEDIDOS, json=payload)
+            requests.post(URL_FIREBASE_PEDIDOS, json={"cantor": st.session_state.nome, "musica": musica_escolhida})
             st.success(f"Pedido enviado: {musica_escolhida}!")
             st.balloons()
 
@@ -86,6 +90,5 @@ else:
         st.session_state.registado = False
         st.rerun()
 
-    # Atualiza a página a cada 5 segundos para verificar o status
     time.sleep(5)
     st.rerun()
