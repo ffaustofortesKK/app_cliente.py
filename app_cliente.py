@@ -37,7 +37,6 @@ else:
     
     # Verificar se o utilizador já tem pedido na fila
     fila = list(pedidos_json.items()) if pedidos_json else []
-    meus_pedidos = [p for p_id, p in fila if str(p.get('cantor')).strip().lower() == meu_nome]
     posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
 
     # 1. VEZ DO CANTOR
@@ -55,10 +54,7 @@ else:
         else:
             st.write(f"🔢 Existem **{posicao}** músicas à sua frente.")
             
-    # 3. ESTADO NORMAL (Adicionar músicas)
-    elif meus_pedidos:
-        st.warning("Aguarde, assim que cantar poderá enviar o seu pedido.")
-    
+    # 3. ESTADO NORMAL
     else:
         st.info("Prepare a sua playlist!")
         
@@ -83,16 +79,19 @@ else:
         st.subheader("📝 Pedido Personalizado")
         pedido_extra = st.text_area("Não encontrou?")
         
-        if st.button("🚀 Enviar Pedidos para o DJ", use_container_width=True):
+        # LÓGICA DE ENVIO APENAS DE UMA MÚSICA
+        if st.button("🚀 Enviar próxima música para o DJ", use_container_width=True):
             if not st.session_state.minha_playlist and not pedido_extra:
                 st.warning("Adicione músicas à playlist.")
             else:
-                for m in st.session_state.minha_playlist:
-                    requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": m})
-                if pedido_extra:
+                if st.session_state.minha_playlist:
+                    # Envia apenas a primeira da lista
+                    musica_envio = st.session_state.minha_playlist.pop(0)
+                    requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": musica_envio})
+                elif pedido_extra:
+                    # Envia o personalizado
                     requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": f"PEDIDO: {pedido_extra}"})
                 
-                st.session_state.minha_playlist = []
                 st.rerun()
 
     st.divider()
