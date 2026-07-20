@@ -32,168 +32,169 @@ URL_CATALOGO = "https://grupoffkaraoke-default-rtdb.firebaseio.com/catalogo.json
 
 def obter_catalogo():
 
-    try:
+    try:
 
-        res = requests.get(URL_CATALOGO).json()
+        res = requests.get(URL_CATALOGO).json()
 
-        return list(res.values()) if isinstance(res, dict) else (res or [])
+        return list(res.values()) if isinstance(res, dict) else (res or [])
 
-    except: return []
+    except: return []
 
 
 
 if not st.session_state.registado:
 
-    st.title("🎤 FF Karaoke")
+    st.title("🎤 FF Karaoke")
 
-    nome = st.text_input("Como quer ser chamado?")
+    nome = st.text_input("Como quer ser chamado?")
 
-    if st.button("Entrar"):
+    if st.button("Entrar"):
 
-        if nome: st.session_state.nome = nome; st.session_state.registado = True; st.rerun()
+        if nome: st.session_state.nome = nome; st.session_state.registado = True; st.rerun()
 
 else:
 
-    # Buscar Estado e Pedidos
+    # Buscar Estado e Pedidos
 
-    try:
+    try:
 
-        status = requests.get(f"{URL_STATUS}?nocache={time.time()}").json() or {}
+        status = requests.get(f"{URL_STATUS}?nocache={time.time()}").json() or {}
 
-        pedidos_json = requests.get(f"{URL_PEDIDOS}?nocache={time.time()}").json() or {}
+        pedidos_json = requests.get(f"{URL_PEDIDOS}?nocache={time.time()}").json() or {}
 
-    except: status = {}; pedidos_json = {}
+    except: status = {}; pedidos_json = {}
 
 
 
-    nome_firebase = str(status.get("cantor", "")).strip().lower()
+    nome_firebase = str(status.get("cantor", "")).strip().lower()
 
-    meu_nome = str(st.session_state.nome).strip().lower()
+    meu_nome = str(st.session_state.nome).strip().lower()
 
-    
+    
 
-    # Verificar se o utilizador já tem pedido na fila
+    # Verificar se o utilizador já tem pedido na fila
 
-    fila = list(pedidos_json.items()) if pedidos_json else []
+    fila = list(pedidos_json.items()) if pedidos_json else []
 
-    posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
+    posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
 
 
 
-    # 1. VEZ DO CANTOR
+    # 1. VEZ DO CANTOR
 
-    if nome_firebase == meu_nome and status.get("comando") == "aguardando_play":
+    if nome_firebase == meu_nome and status.get("comando") == "aguardando_play":
 
-        st.success("🎉 Próximo és tu, preparado?")
+        st.success("🎉 Próximo és tu, preparado?")
 
-        if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
+        if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
 
-            requests.patch(URL_STATUS, json={"comando": "play"})
+            requests.patch(URL_STATUS, json={"comando": "play"})
 
-            st.rerun()
+            st.rerun()
 
-            
+            
 
-    # 2. ESPERANDO NA FILA
+    # 2. ESPERANDO NA FILA
 
-    elif posicao != -1:
+    elif posicao != -1:
 
-        st.warning("⚠️ O seu pedido foi enviado. Aguarde a sua vez.")
+        st.warning("⚠️ O seu pedido foi enviado. Aguarde a sua vez.")
 
-        if posicao == 0:
+        if posicao == 0:
 
-            st.info("📢 Estás quase lá, aguarde o sinal para começar.")
+            st.info("📢 Estás quase lá, aguarde o sinal para começar.")
 
-        else:
+        else:
 
-            st.write(f"🔢 Existem **{posicao}** músicas à sua frente.")
+            st.write(f"🔢 Existem **{posicao}** músicas à sua frente.")
 
-            
+            
 
-    # 3. ESTADO NORMAL
+    # 3. ESTADO NORMAL
 
-    else:
+    else:
 
-        st.info("Prepare a sua playlist!")
+        st.info("Prepare a sua playlist!")
 
-        
+        
 
-        # 1. PLAYLIST ATUAL (MÁX 3)
+        # 1. PLAYLIST ATUAL (MÁX 3)
 
-        st.subheader("Minha Playlist (Máx 3)")
+        st.subheader("Minha Playlist (Máx 3)")
 
-        for i, m in enumerate(st.session_state.minha_playlist):
+        for i, m in enumerate(st.session_state.minha_playlist):
 
-            col1, col2 = st.columns([4, 1])
+            col1, col2 = st.columns([4, 1])
 
-            col1.write(f"{i+1}. {m}")
+            col1.write(f"{i+1}. {m}")
 
-            if col2.button("❌", key=f"rem_{i}"):
+            if col2.button("❌", key=f"rem_{i}"):
 
-                st.session_state.minha_playlist.pop(i); st.rerun()
+                st.session_state.minha_playlist.pop(i); st.rerun()
 
-        
+        
 
-        # 2. PESQUISA
+        # 2. PESQUISA
 
-        if len(st.session_state.minha_playlist) < 3:
+        if len(st.session_state.minha_playlist) < 3:
 
-            termo = st.text_input("🔍 Pesquisar música:")
+            termo = st.text_input("🔍 Pesquisar música:")
 
-            resultados = [m for m in obter_catalogo() if termo.lower() in str(m).lower()] if termo else []
+            resultados = [m for m in obter_catalogo() if termo.lower() in str(m).lower()] if termo else []
 
-            if termo and resultados:
+            if termo and resultados:
 
-                musica_sel = st.selectbox("Escolha:", resultados)
+                musica_sel = st.selectbox("Escolha:", resultados)
 
-                if st.button("➕ Adicionar à Playlist"):
+                if st.button("➕ Adicionar à Playlist"):
 
-                    st.session_state.minha_playlist.append(musica_sel); st.rerun()
+                    st.session_state.minha_playlist.append(musica_sel); st.rerun()
 
-        
+        
 
-        st.divider()
+        st.divider()
 
-        st.subheader("📝 Pedido Personalizado")
+        st.subheader("📝 Pedido Personalizado")
 
-        pedido_extra = st.text_area("Não encontrou?")
+        pedido_extra = st.text_area("Não encontrou?")
 
-        
+        
 
-        # LÓGICA DE ENVIO APENAS DE UMA MÚSICA
+        # LÓGICA DE ENVIO APENAS DE UMA MÚSICA
 
-        if st.button("🚀 Enviar próxima música para o DJ", use_container_width=True):
+        if st.button("🚀 Enviar próxima música para o DJ", use_container_width=True):
 
-            if not st.session_state.minha_playlist and not pedido_extra:
+            if not st.session_state.minha_playlist and not pedido_extra:
 
-                st.warning("Adicione músicas à playlist.")
+                st.warning("Adicione músicas à playlist.")
 
-            else:
+            else:
 
-                if st.session_state.minha_playlist:
+                if st.session_state.minha_playlist:
 
-                    # Envia apenas a primeira da lista
+                    # Envia apenas a primeira da lista
 
-                    musica_envio = st.session_state.minha_playlist.pop(0)
+                    musica_envio = st.session_state.minha_playlist.pop(0)
 
-                    requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": musica_envio})
+                    requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": musica_envio})
 
-                elif pedido_extra:
+                elif pedido_extra:
 
-                    # Envia o personalizado
+                    # Envia o personalizado
 
-                    requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": f"PEDIDO: {pedido_extra}"})
+                    requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": f"PEDIDO: {pedido_extra}"})
 
-                
+                
 
-                st.rerun()
+                st.rerun()
 
 
 
-    st.divider()
+    st.divider()
 
-    if st.button("Sair"): st.session_state.registado = False; st.rerun()
+    if st.button("Sair"): st.session_state.registado = False; st.rerun()
 
-    
+    
 
-    time.sleep(3); st.rerun()
+    time.sleep(3); st.rerun() 
+
