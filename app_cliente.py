@@ -86,10 +86,20 @@ else:
         
         st.divider()
         st.subheader("📝 Pedido Personalizado")
-        pedido_extra = st.text_area("Não encontrou?")
+        pedido_extra = st.text_area("Não encontrou?", key="input_pedido_extra")
         
-        # LÓGICA DE ENVIO PARA O DJ
-        if st.button("🚀 Enviar próxima música para o DJ", use_container_width=True):
+        # LÓGICA DE ENVIO PARA O DJ COM BOTÃO LIMPAR
+        col_envio, col_limpar = st.columns(2)
+        with col_envio:
+            btn_enviar = st.button("🚀 Enviar próxima música para o DJ", use_container_width=True)
+        with col_limpar:
+            btn_limpar = st.button("🧹 Limpar", use_container_width=True)
+
+        if btn_limpar:
+            st.session_state.minha_playlist = []
+            st.rerun()
+
+        if btn_enviar:
             if not st.session_state.minha_playlist and not pedido_extra:
                 st.warning("Adicione músicas à playlist.")
             else:
