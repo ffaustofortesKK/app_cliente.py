@@ -9,8 +9,10 @@ if 'minha_playlist' not in st.session_state: st.session_state.minha_playlist = [
 
 query_params = st.query_params
 prestador_slug = query_params.get("prestador", "geral")
+
+# URLs corrigidas para ficarem em perfeita sintonia com o painel desktop do DJ
 URL_STATUS = f"https://grupoffkaraoke-default-rtdb.firebaseio.com/status_{prestador_slug}.json"
-URL_PEDIDOS = f"https://grupoffkaraoke-default-rtdb.firebaseio.com/pedidos_{prestador_slug}.json"
+URL_PEDIDOS = "https://grupoffkaraoke-default-rtdb.firebaseio.com/pedidos.json"
 URL_CATALOGO = "https://grupoffkaraoke-default-rtdb.firebaseio.com/catalogo.json"
 
 @st.cache_data(ttl=300)
@@ -24,13 +26,18 @@ if not st.session_state.registado:
     st.title("🎤 FF Karaoke")
     nome = st.text_input("Como quer ser chamado?")
     if st.button("Entrar"):
-        if nome: st.session_state.nome = nome; st.session_state.registado = True; st.rerun()
+        if nome: 
+            st.session_state.nome = nome
+            st.session_state.registado = True
+            st.rerun()
 else:
     # Buscar Estado e Pedidos
     try:
         status = requests.get(f"{URL_STATUS}?nocache={time.time()}").json() or {}
         pedidos_json = requests.get(f"{URL_PEDIDOS}?nocache={time.time()}").json() or {}
-    except: status = {}; pedidos_json = {}
+    except: 
+        status = {}
+        pedidos_json = {}
 
     nome_firebase = str(status.get("cantor", "")).strip().lower()
     meu_nome = str(st.session_state.nome).strip().lower()
@@ -64,7 +71,8 @@ else:
             col1, col2 = st.columns([4, 1])
             col1.write(f"{i+1}. {m}")
             if col2.button("❌", key=f"rem_{i}"):
-                st.session_state.minha_playlist.pop(i); st.rerun()
+                st.session_state.minha_playlist.pop(i)
+                st.rerun()
         
         # 2. PESQUISA
         if len(st.session_state.minha_playlist) < 3:
@@ -73,28 +81,32 @@ else:
             if termo and resultados:
                 musica_sel = st.selectbox("Escolha:", resultados)
                 if st.button("➕ Adicionar à Playlist"):
-                    st.session_state.minha_playlist.append(musica_sel); st.rerun()
+                    st.session_state.minha_playlist.append(musica_sel)
+                    st.rerun()
         
         st.divider()
         st.subheader("📝 Pedido Personalizado")
         pedido_extra = st.text_area("Não encontrou?")
         
-        # LÓGICA DE ENVIO APENAS DE UMA MÚSICA
+        # LÓGICA DE ENVIO PARA O DJ
         if st.button("🚀 Enviar próxima música para o DJ", use_container_width=True):
             if not st.session_state.minha_playlist and not pedido_extra:
                 st.warning("Adicione músicas à playlist.")
             else:
                 if st.session_state.minha_playlist:
-                    # Envia apenas a primeira da lista
+                    # Envia apenas a primeira da lista para o nó principal lido pelo operador
                     musica_envio = st.session_state.minha_playlist.pop(0)
                     requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": musica_envio})
                 elif pedido_extra:
-                    # Envia o personalizado
+                    # Envia o pedido personalizado
                     requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": f"PEDIDO: {pedido_extra}"})
                 
                 st.rerun()
 
     st.divider()
-    if st.button("Sair"): st.session_state.registado = False; st.rerun()
+    if st.button("Sair"): 
+        st.session_state.registado = False
+        st.rerun()
     
-    time.sleep(3); st.rerun()
+    time.sleep(3)
+    st.rerun()
