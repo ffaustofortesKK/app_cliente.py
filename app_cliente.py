@@ -1,3 +1,11 @@
+import streamlit as st
+
+import requests
+
+import time
+
+
+
 st.set_page_config(page_title="FF KARAOKE - CLIENTE", layout="centered")
 
 
@@ -188,5 +196,4 @@ else:
 
     
 
-    time.sleep(3); st.rerun() 
-
+    time.sleep(3); st.rerun()
