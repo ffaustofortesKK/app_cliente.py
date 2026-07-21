@@ -45,7 +45,7 @@ else:
     fila = list(pedidos_json.items()) if pedidos_json else []
     posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
 
-    # 1. VEZ DO CANTOR
+    # 1. VEZ DO CANTOR (Opção Começar a minha música restaurada)
     if nome_firebase == meu_nome and status.get("comando") == "aguardando_play":
         st.success("🎉 Próximo és tu, preparado?")
         if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
@@ -74,7 +74,7 @@ else:
     else:
         st.info("A sua playlist está vazia.")
     
-    # PESQUISA E ADIÇÃO (Sempre acessível para continuar a pesquisar e gerir)
+    # PESQUISA E ADIÇÃO
     termo = st.text_input("🔍 Pesquisar música:")
     resultados = [m for m in obter_catalogo() if termo.lower() in str(m).lower()] if termo else []
     
@@ -91,7 +91,6 @@ else:
     st.subheader("📝 Pedido Personalizado")
     pedido_extra = st.text_area("Não encontrou?", key="input_pedido_extra")
     
-    # LÓGICA DE ENVIO PARA O DJ COM BOTÃO LIMPAR
     col_envio, col_limpar = st.columns(2)
     with col_envio:
         btn_enviar = st.button("🚀 Enviar próxima música para o DJ", use_container_width=True)
@@ -102,7 +101,7 @@ else:
         st.session_state.minha_playlist = []
         st.rerun()
 
-    if btn_enviar:
+    if btn_envviar:
         if not st.session_state.minha_playlist and not pedido_extra:
             st.warning("Adicione músicas à playlist ou escreva um pedido personalizado.")
         else:
