@@ -31,8 +31,8 @@ if not st.session_state.registado:
             st.rerun()
 else:
     try:
-        status = requests.get(f"{URL_STATUS}?nocache={time.time()}").json() or {}
-        pedidos_json = requests.get(f"{URL_PEDIDOS}?nocache={time.time()}").json() or {}
+        status = requests.get(f"{URL_STATUS}?nocache={time.time()}", timeout=2).json() or {}
+        pedidos_json = requests.get(f"{URL_PEDIDOS}?nocache={time.time()}", timeout=2).json() or {}
     except: 
         status = {}
         pedidos_json = {}
@@ -43,14 +43,12 @@ else:
     fila = list(pedidos_json.items()) if pedidos_json else []
     posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
 
-    # 1. VEZ DO CANTOR
     if nome_firebase == meu_nome and status.get("comando") == "aguardando_play":
         st.success("🎉 Próximo és tu, preparado?")
         if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
             requests.patch(URL_STATUS, json={"comando": "play"})
             st.rerun()
             
-    # 2. ESPERANDO NA FILA
     elif posicao != -1:
         st.warning("⚠️ O seu pedido foi enviado. Aguarde a sua vez.")
         if posicao == 0:
@@ -58,7 +56,6 @@ else:
         else:
             st.write(f"🔢 Existem **{posicao}** músicas à sua frente.")
 
-    # 3. INTERFACE DE PLAYLIST E PESQUISA SEMPRE DISPONÍVEL
     st.divider()
     st.subheader("Minha Playlist (Máx 3)")
     
@@ -88,9 +85,11 @@ else:
     st.subheader("📝 Pedido Personalizado")
     pedido_extra = st.text_area("Não encontrou?", key="input_pedido_extra")
     
-    # Declaração segura dos botões fora de blocos colapsados para evitar falhas de escopo
-    btn_enviar = st.button("🚀 Enviar próxima música para o DJ", use_container_width=True)
-    btn_limpar = st.button("🧹 Limpar Playlist", use_container_width=True)
+    col_envio, col_limpar = st.columns(2)
+    with col_envio:
+        btn_enviar = st.button("🚀 Enviar próxima música para o DJ", use_container_width=True)
+    with col_limpar:
+        btn_limpar = st.button("🧹 Limpar Playlist", use_container_width=True)
 
     if btn_limpar:
         st.session_state.minha_playlist = []
@@ -105,7 +104,6 @@ else:
                 requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": musica_envio})
             elif pedido_extra:
                 requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": f"PEDIDO: {pedido_extra}"})
-            
             st.rerun()
 
     st.divider()
@@ -113,5 +111,5 @@ else:
         st.session_state.registado = False
         st.rerun()
     
-    time.sleep(2)
+    time.sleep(1.5)
     st.rerun()
