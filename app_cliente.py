@@ -11,7 +11,6 @@ query_params = st.query_params
 prestador_slug = query_params.get("prestador", "geral")
 
 URL_STATUS = f"https://grupoffkaraoke-default-rtdb.firebaseio.com/status_{prestador_slug}.json"
-# CORRIGIDO: Agora aponta para o nó específico do prestador em vez do global
 URL_PEDIDOS = f"https://grupoffkaraoke-default-rtdb.firebaseio.com/pedidos_{prestador_slug}.json"
 URL_CATALOGO = "https://grupoffkaraoke-default-rtdb.firebaseio.com/catalogo.json"
 
@@ -74,14 +73,21 @@ else:
                 st.session_state.minha_playlist.pop(i)
                 st.rerun()
         
-        # 2. PESQUISA
-        if len(st.session_state.minha_playlist) < 3:
-            termo = st.text_input("🔍 Pesquisar música:")
-            resultados = [m for m in obter_catalogo() if termo.lower() in str(m).lower()] if termo else []
-            if termo and resultados:
-                musica_sel = st.selectbox("Escolha:", resultados)
-                if st.button("➕ Adicionar à Playlist"):
+        st.divider()
+        
+        # 2. PESQUISA (Agora sempre disponível, mesmo com 3 músicas)
+        st.subheader("🔍 Pesquisa e Adição")
+        termo = st.text_input("Pesquisar nova música:")
+        resultados = [m for m in obter_catalogo() if termo.lower() in str(m).lower()] if termo else []
+        
+        if termo and resultados:
+            musica_sel = st.selectbox("Escolha:", resultados, key="select_pesquisa_musica")
+            if st.button("➕ Adicionar à Playlist"):
+                if len(st.session_state.minha_playlist) >= 3:
+                    st.warning("⚠️ A sua playlist já atingiu o limite de 3 músicas! Remova uma das músicas existentes na sua playlist para poder adicionar esta nova.")
+                else:
                     st.session_state.minha_playlist.append(musica_sel)
+                    st.success("Música adicionada com sucesso!")
                     st.rerun()
         
         st.divider()
