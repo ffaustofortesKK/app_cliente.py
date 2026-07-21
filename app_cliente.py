@@ -43,7 +43,7 @@ else:
     fila = list(pedidos_json.items()) if pedidos_json else []
     posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
 
-    # 1. VEZ DO CANTOR (Opção de iniciar a música a partir do cliente totalmente automática)
+    # 1. VEZ DO CANTOR
     if nome_firebase == meu_nome and status.get("comando") == "aguardando_play":
         st.success("🎉 Próximo és tu, preparado?")
         if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
@@ -79,7 +79,7 @@ else:
         musica_sel = st.selectbox("Escolha:", resultados, key="select_busca_musica")
         if st.button("➕ Adicionar à Playlist"):
             if len(st.session_state.minha_playlist) >= 3:
-                st.warning("⚠️ Atingiu o limite de 3 músicas na playlist! Terá de remover uma das músicas existentes para poder adicionar uma nova.")
+                st.warning("⚠️ Atingiu o limite de 3 músicas na playlist!")
             else:
                 st.session_state.minha_playlist.append(musica_sel)
                 st.rerun()
@@ -98,7 +98,7 @@ else:
         st.session_state.minha_playlist = []
         st.rerun()
 
-    if btn_enviar:
+    if btn_envio:
         if not st.session_state.minha_playlist and not pedido_extra:
             st.warning("Adicione músicas à playlist ou escreva um pedido personalizado.")
         else:
@@ -115,5 +115,5 @@ else:
         st.session_state.registado = False
         st.rerun()
     
-    time.sleep(3)
+    time.sleep(2)
     st.rerun()
