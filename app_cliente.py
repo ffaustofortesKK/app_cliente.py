@@ -30,7 +30,6 @@ if not st.session_state.registado:
             st.session_state.registado = True
             st.rerun()
 else:
-    # Buscar Estado e Pedidos
     try:
         status = requests.get(f"{URL_STATUS}?nocache={time.time()}").json() or {}
         pedidos_json = requests.get(f"{URL_PEDIDOS}?nocache={time.time()}").json() or {}
@@ -41,11 +40,10 @@ else:
     nome_firebase = str(status.get("cantor", "")).strip().lower()
     meu_nome = str(st.session_state.nome).strip().lower()
     
-    # Verificar se o utilizador já tem pedido na fila
     fila = list(pedidos_json.items()) if pedidos_json else []
     posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
 
-    # 1. VEZ DO CANTOR (Opção Começar a minha música restaurada)
+    # 1. VEZ DO CANTOR (Opção de iniciar a música a partir do cliente totalmente automática)
     if nome_firebase == meu_nome and status.get("comando") == "aguardando_play":
         st.success("🎉 Próximo és tu, preparado?")
         if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
@@ -74,7 +72,6 @@ else:
     else:
         st.info("A sua playlist está vazia.")
     
-    # PESQUISA E ADIÇÃO
     termo = st.text_input("🔍 Pesquisar música:")
     resultados = [m for m in obter_catalogo() if termo.lower() in str(m).lower()] if termo else []
     
@@ -101,7 +98,7 @@ else:
         st.session_state.minha_playlist = []
         st.rerun()
 
-    if btn_envviar:
+    if btn_enviar:
         if not st.session_state.minha_playlist and not pedido_extra:
             st.warning("Adicione músicas à playlist ou escreva um pedido personalizado.")
         else:
