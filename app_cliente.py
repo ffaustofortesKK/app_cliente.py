@@ -43,7 +43,6 @@ else:
     fila = list(pedidos_json.items()) if pedidos_json else []
     posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
 
-    # Condição ajustada para aceitar os comandos de chamada ao palco enviados pelo prestador
     if nome_firebase == meu_nome and status.get("comando") in ["aguardando_play", "executando_karaoke"]:
         st.success("🎉 Próximo és tu, preparado?")
         if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
@@ -96,7 +95,7 @@ else:
         st.session_state.minha_playlist = []
         st.rerun()
 
-    if btn_enviar:
+    if btn_envviar:
         if not st.session_state.minha_playlist and not pedido_extra:
             st.warning("Adicione músicas à playlist ou escreva um pedido personalizado.")
         else:
