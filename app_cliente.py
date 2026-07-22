@@ -47,13 +47,9 @@ else:
     esta_a_cantar_ou_chamado = (nome_firebase == meu_nome)
     comando_atual = status.get("comando")
 
-    # Lógica de estados e mensagens no cliente
     if esta_a_cantar_ou_chamado:
         if comando_atual == "aguardando_play":
-            st.success("🎉 Próximo és tu, preparado?")
-            if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
-                requests.patch(URL_STATUS, json={"comando": "play"})
-                st.rerun()
+            st.success("🎉 É a tua vez! Prepara-te, o vídeo vai começar a tocar na tela...")
         elif comando_atual in ["play", "executando_karaoke"]:
             st.info("🎵 A tua música está a passar na tela!")
     elif tem_pedido_na_fila:
@@ -72,7 +68,7 @@ else:
         for i, m in enumerate(st.session_state.minha_playlist):
             col1, col2 = st.columns([4, 1])
             col1.write(f"{i+1}. {m}")
-            if col2.button("❌", key=f"rem_{i}"):
+            if col2.button("❌", key=f"rem_{i}*"):
                 st.session_state.minha_playlist.pop(i)
                 st.rerun()
     else:
