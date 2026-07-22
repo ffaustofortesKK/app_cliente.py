@@ -95,7 +95,7 @@ else:
         st.session_state.minha_playlist = []
         st.rerun()
 
-    if btn_envviar:
+    if btn_enviar:
         if not st.session_state.minha_playlist and not pedido_extra:
             st.warning("Adicione músicas à playlist ou escreva um pedido personalizado.")
         else:
