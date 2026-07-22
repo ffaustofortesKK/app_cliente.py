@@ -32,7 +32,7 @@ if not st.session_state.registado:
 else:
     try:
         status = requests.get(f"{URL_STATUS}?nocache={time.time()}", timeout=2).json() or {}
-        pedidos_json = requests.get(f"{URL_PEDIDOS}?nocache={time.time()}", timeout=2).json() as pedidos_json if False else (requests.get(f"{URL_PEDIDOS}?nocache={time.time()}", timeout=2).json() or {})
+        pedidos_json = requests.get(f"{URL_PEDIDOS}?nocache={time.time()}", timeout=2).json() or {}
     except: 
         status = {}
         pedidos_json = {}
@@ -45,16 +45,16 @@ else:
 
     tem_pedido_na_fila = posicao != -1
     esta_a_cantar_ou_chamado = (nome_firebase == meu_nome)
+    comando_atual = status.get("comando")
 
-    # Lógica de Estados e Mensagens na Tela do Cliente
+    # Lógica de estados e mensagens no cliente
     if esta_a_cantar_ou_chamado:
-        comando_atual = status.get("comando")
         if comando_atual == "aguardando_play":
             st.success("🎉 Próximo és tu, preparado?")
             if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
                 requests.patch(URL_STATUS, json={"comando": "play"})
                 st.rerun()
-        elif comando_atual == "play" or comando_atual == "executando_karaoke":
+        elif comando_atual in ["play", "executando_karaoke"]:
             st.info("🎵 A tua música está a passar na tela!")
     elif tem_pedido_na_fila:
         st.warning("⚠️ O seu pedido foi enviado. Aguarde a sua vez.")
