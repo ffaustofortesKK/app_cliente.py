@@ -43,18 +43,26 @@ else:
     fila = list(pedidos_json.items()) if pedidos_json else []
     posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
 
-    if nome_firebase == meu_nome and status.get("comando") in ["aguardando_play", "executando_karaoke"]:
-        st.success("🎉 Próximo és tu, preparado?")
-        if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
-            requests.patch(URL_STATUS, json={"comando": "executando_karaoke"})
-            st.rerun()
-            
-    elif posicao != -1:
+    tem_pedido_na_fila = posicao != -1
+    esta_a_cantar_ou_chamado = (nome_firebase == meu_nome)
+
+    if esta_a_cantar_ou_chamado:
+        comando_atual = status.get("comando")
+        if comando_atual == "aguardando_play":
+            st.success("🎉 Próximo és tu, preparado?")
+            if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
+                requests.patch(URL_STATUS, json={"comando": "play"})
+                st.rerun()
+        elif comando_atual == "play" or comando_atual == "executando_karaoke":
+            st.info("🎵 A tua música está a passar na tela!")
+    elif tem_pedido_na_fila:
         st.warning("⚠️ O seu pedido foi enviado. Aguarde a sua vez.")
         if posicao == 0:
             st.info("📢 Estás quase lá, aguarde o sinal para começar.")
         else:
             st.write(f"🔢 Existem **{posicao}** músicas à sua frente.")
+    else:
+        st.success("✅ Já podes enviar a tua próxima música!")
 
     st.divider()
     st.subheader("Minha Playlist (Máx 3)")
@@ -95,8 +103,10 @@ else:
         st.session_state.minha_playlist = []
         st.rerun()
 
-    if btn_enviar:
-        if not st.session_state.minha_playlist and not pedido_extra:
+    if btn_envviar:
+        if tem_pedido_na_fila or esta_a_cantar_ou_chamado:
+            st.error("⛔ Só podes enviar outra música assim que a tua atuação atual terminar!")
+        elif not st.session_state.minha_playlist and not pedido_extra:
             st.warning("Adicione músicas à playlist ou escreva um pedido personalizado.")
         else:
             if st.session_state.minha_playlist:
