@@ -49,12 +49,7 @@ else:
 
     # Lógica de estados e mensagens no cliente
     if esta_a_cantar_ou_chamado:
-        if comando_atual == "aguardando_play":
-            st.success("🎉 Próximo és tu, preparado?")
-            if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
-                requests.patch(URL_STATUS, json={"comando": "play"})
-                st.rerun()
-        elif comando_atual in ["play", "executando_karaoke"]:
+        if comando_atual in ["aguardando_play", "play", "executando_karaoke"]:
             st.info("🎵 A tua música está a passar na tela!")
     elif tem_pedido_na_fila:
         st.warning("⚠️ O seu pedido foi enviado. Aguarde a sua vez.")
