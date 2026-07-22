@@ -43,10 +43,11 @@ else:
     fila = list(pedidos_json.items()) if pedidos_json else []
     posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
 
-    if nome_firebase == meu_nome and status.get("comando") == "aguardando_play":
+    # Condição ajustada para aceitar os comandos de chamada ao palco enviados pelo prestador
+    if nome_firebase == meu_nome and status.get("comando") in ["aguardando_play", "executando_karaoke"]:
         st.success("🎉 Próximo és tu, preparado?")
         if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
-            requests.patch(URL_STATUS, json={"comando": "play"})
+            requests.patch(URL_STATUS, json={"comando": "executando_karaoke"})
             st.rerun()
             
     elif posicao != -1:
