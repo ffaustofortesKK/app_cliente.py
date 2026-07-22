@@ -42,7 +42,7 @@ else:
     
     fila = list(pedidos_json.items()) if pedidos_json else []
     posicao = next((i for i, (p_id, p) in enumerate(fila) if str(p.get('cantor')).strip().lower() == meu_nome), -1)
-
+    
     tem_pedido_na_fila = posicao != -1
     esta_a_cantar_ou_chamado = (nome_firebase == meu_nome)
 
@@ -53,7 +53,7 @@ else:
             if st.button("▶️ COMEÇAR A MINHA MÚSICA", use_container_width=True):
                 requests.patch(URL_STATUS, json={"comando": "play"})
                 st.rerun()
-        elif comando_atual == "play" or comando_atual == "executando_karaoke":
+        elif comando_atual in ["play", "executando_karaoke"]:
             st.info("🎵 A tua música está a passar na tela!")
     elif tem_pedido_na_fila:
         st.warning("⚠️ O seu pedido foi enviado. Aguarde a sua vez.")
@@ -103,7 +103,7 @@ else:
         st.session_state.minha_playlist = []
         st.rerun()
 
-    if btn_envviar:
+    if btn_enviar:
         if tem_pedido_na_fila or esta_a_cantar_ou_chamado:
             st.error("⛔ Só podes enviar outra música assim que a tua atuação atual terminar!")
         elif not st.session_state.minha_playlist and not pedido_extra:
