@@ -5,6 +5,7 @@ import time
 st.set_page_config(page_title="FF KARAOKE - CLIENTE", layout="centered")
 
 if 'registado' not in st.session_state: st.session_state.registado = False
+if 'minha_playlist' not in st.session_state: st.session_state.minha_playlist = []
 
 query_params = st.query_params
 prestador_slug = query_params.get("prestador", "geral")
@@ -61,38 +62,55 @@ else:
         st.success("✅ Já podes enviar a tua próxima música!")
 
     st.divider()
-    st.subheader("🔍 Pesquisar Música no Catálogo")
+    st.subheader("Minha Playlist (Máx 3)")
     
-    termo = st.text_input("Digite o nome do artista ou música:")
+    if st.session_state.minha_playlist:
+        for i, m in enumerate(st.session_state.minha_playlist):
+            col1, col2 = st.columns([4, 1])
+            col1.write(f"{i+1}. {m}")
+            if col2.button("❌", key=f"rem_{i}*"):
+                st.session_state.minha_playlist.pop(i)
+                st.rerun()
+    else:
+        st.info("A sua playlist está vazia.")
+    
+    termo = st.text_input("🔍 Pesquisar música:")
     resultados = [m for m in obter_catalogo() if termo.lower() in str(m).lower()] if termo else []
     
-    musica_escolhida = None
     if termo and resultados:
-        musica_escolhida = st.selectbox("Escolha na lista:", resultados, key="select_busca_musica")
-        if st.button("🚀 Enviar para o DJ", key="btn_enviar_catalogo", use_container_width=True):
-            if tem_pedido_na_fila or esta_a_cantar_ou_chamado:
-                st.error("⛔ Só podes enviar outra música assim que a tua atuação atual terminar!")
-            elif not musica_escolhida:
-                st.warning("Selecione uma música do catálogo.")
+        musica_sel = st.selectbox("Escolha:", resultados, key="select_busca_musica")
+        if st.button("➕ Adicionar à Playlist"):
+            if len(st.session_state.minha_playlist) >= 3:
+                st.warning("⚠️ Atingiu o limite de 3 músicas na playlist!")
             else:
-                requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": musica_escolhida})
-                st.success("Pedido enviado com sucesso!")
-                time.sleep(1)
+                st.session_state.minha_playlist.append(musica_sel)
                 st.rerun()
-
-    st.divider()
-    st.subheader("📝 Ou Pedido Personalizado")
-    pedido_extra = st.text_area("Não encontrou no catálogo? Escreva aqui:", key="input_pedido_extra")
     
-    if st.button("🚀 Enviar Pedido Personalizado para o DJ", key="btn_enviar_personalizado", use_container_width=True):
+    st.divider()
+    st.subheader("📝 Pedido Personalizado")
+    pedido_extra = st.text_area("Não encontrou?", key="input_pedido_extra")
+    
+    col_envio, col_limpar = st.columns(2)
+    with col_envio:
+        btn_enviar = st.button("🚀 Enviar próxima música para o DJ", use_container_width=True)
+    with col_limpar:
+        btn_limpar = st.button("🧹 Limpar Playlist", use_container_width=True)
+
+    if btn_limpar:
+        st.session_state.minha_playlist = []
+        st.rerun()
+
+    if btn_enviar:
         if tem_pedido_na_fila or esta_a_cantar_ou_chamado:
             st.error("⛔ Só podes enviar outra música assim que a tua atuação atual terminar!")
-        elif not pedido_extra:
-            st.warning("Escreva o seu pedido personalizado.")
+        elif not st.session_state.minha_playlist and not pedido_extra:
+            st.warning("Adicione músicas à playlist ou escreva um pedido personalizado.")
         else:
-            requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": f"PEDIDO: {pedido_extra}"})
-            st.success("Pedido enviado com sucesso!")
-            time.sleep(1)
+            if st.session_state.minha_playlist:
+                musica_envio = st.session_state.minha_playlist.pop(0)
+                requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": musica_envio})
+            elif pedido_extra:
+                requests.post(URL_PEDIDOS, json={"cantor": st.session_state.nome, "musica": f"PEDIDO: {pedido_extra}"})
             st.rerun()
 
     st.divider()
