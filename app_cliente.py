@@ -50,7 +50,7 @@ else:
     if esta_a_cantar_ou_chamado:
         if comando_atual == "aguardando_play":
             st.success("🎉 É a tua vez! Prepara-te, o vídeo vai começar a tocar na tela...")
-        elif comando_atual in ["play", "executando_karaoke"]:
+        elif comando_atual == "play":
             st.info("🎵 A tua música está a passar na tela!")
     elif tem_pedido_na_fila:
         st.warning("⚠️ O seu pedido foi enviado. Aguarde a sua vez.")
